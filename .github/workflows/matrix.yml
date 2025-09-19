@@ -1,0 +1,68 @@
+name: Matrix CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: Test on Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [21, 22]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - name: Install deps
+        run: npm ci
+      - name: Run tests
+        run: npm test --ignore-scripts
+
+  lint:
+    name: Lint (runs in parallel)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install deps
+        run: npm ci
+      - name: Placeholder lint step
+        run: |
+          echo "No linter configured; running placeholder check"
+          node -v
+
+  build:
+    name: Build/package (after tests and lint)
+    needs: [test, lint]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Create package artifact
+        run: |
+          tar -czf artifact.tgz *
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-artifact
+          path: artifact.tgz
+
+  deploy:
+    name: Deploy (after build)
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Echo deploy placeholder
+        run: echo "Deploy step would run here after all previous jobs succeed."
